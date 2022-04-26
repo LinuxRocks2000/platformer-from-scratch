@@ -86,9 +86,13 @@ class Game {
 }
 
 
+// Demo
 var game = new Game(50, 50);
+var brick = game.create(0, 0, 1, 1, "normal", "solid");
+
 
 function mainloop(){
+    brick.move(1, 0);
     game.loop();
     window.requestAnimationFrame(mainloop);
 }
