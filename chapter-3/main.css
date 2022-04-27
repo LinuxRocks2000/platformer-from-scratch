@@ -1,0 +1,15 @@
+#game > div{
+    position: absolute;
+}
+
+.normal{
+    background-color: brown;
+}
+
+.player{
+    background-color: green;
+}
+
+body {
+    overflow: hidden;
+}
