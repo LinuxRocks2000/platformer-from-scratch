@@ -1,0 +1,32 @@
+#game > div{
+    position: absolute;
+}
+
+.normal{
+    background-color: brown;
+}
+
+.player{
+    background-color: green;
+}
+
+body {
+    overflow: hidden;
+}
+
+.lava{
+    background-color: red;
+}
+
+.coin{
+    background-color: yellow;
+    border-radius: 100%;
+}
+
+.coin > span{
+    display: inline-block;
+    position: relative; /* Relative is easier to read than absolute in this case - it should be placed *relative* to the outer brick */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
