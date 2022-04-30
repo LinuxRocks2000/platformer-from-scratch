@@ -1,0 +1,67 @@
+@keyframes spin {
+    0%{
+        transform: perspective(300px) rotateY(0deg);
+    }
+
+    100%{
+        transform: perspective(300px) rotateY(360deg);
+    }
+}
+
+#game > div{
+    position: absolute;
+}
+
+.normal{
+    background-color: brown;
+}
+
+.player{
+    background-color: green;
+}
+
+body {
+    overflow: hidden;
+}
+
+.lava{
+    background-color: red;
+}
+
+.coin{
+    animation-name: spin;
+    animation-duration: 1s;
+    animation-iteration-count: infinite;
+    animation-direction: normal;
+    animation-timing-function: linear;
+}
+
+.coin > span{
+    background-color: yellow;
+    border-radius: 100%;
+    display: inline-block;
+    position: relative; /* Relative is easier to read than absolute in this case - it should be placed *relative* to the outer brick */
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.tencoin > span{
+    padding: 5px;
+}
+
+.fiftycoin > span{
+    padding: 10px;
+}
+
+.jumpthrough{
+    background-color: yellow;
+}
+
+.ice{
+    background-color: lightblue;
+}
+
+.tar{
+    background-color: black;
+}
