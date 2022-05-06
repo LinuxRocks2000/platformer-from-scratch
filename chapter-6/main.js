@@ -1,16 +1,3 @@
-function treeWalk(arr){
-    var ret = [];
-    arr.forEach((item, i) => {
-        if (Array.isArray(item)){
-            ret.push(...treeWalk(item));
-        }
-        else{
-            ret.push(item);
-        }
-    });
-    return ret;
-}
-
 function getRightmost(physicsObjects){
     var rightmostVal = Infinity;
     var rightmostObj = undefined;
