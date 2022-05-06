@@ -1,3 +1,65 @@
+function treeWalk(arr){
+    var ret = [];
+    arr.forEach((item, i) => {
+        if (Array.isArray(item)){
+            ret.push(...treeWalk(item));
+        }
+        else{
+            ret.push(item);
+        }
+    });
+    return ret;
+}
+
+function getRightmost(physicsObjects){
+    var rightmostVal = Infinity;
+    var rightmostObj = undefined;
+    physicsObjects.forEach((item, i) => {
+        if (item.x < rightmostVal){
+            rightmostVal = item.x;
+            rightmostObj = item;
+        }
+    });
+    return rightmostObj;
+}
+
+function getLeftmost(physicsObjects){
+    var leftmostVal = -Infinity;
+    var leftmostObj = undefined;
+    physicsObjects.forEach((item, i) => {
+        if (item.x + item.width > leftmostVal){
+            leftmostVal = item.x;
+            leftmostObj = item;
+        }
+    });
+    return leftmostObj;
+}
+
+function getTopmost(physicsObjects){
+    var topmostVal = Infinity;
+    var topmostObj = undefined;
+    physicsObjects.forEach((item, i) => {
+        if (item.y < topmostVal){
+            topmostVal = item.y;
+            topmostObj = item;
+        }
+    });
+    return topmostObj;
+}
+
+function getBottommost(physicsObjects){
+    var bottommostVal = -Infinity;
+    var bottommostObj = undefined;
+    physicsObjects.forEach((item, i) => {
+        if (item.y + item.height > bottommostVal){
+            bottommostVal = item.x;
+            bottommostObj = item;
+        }
+    });
+    return bottommostObj;
+}
+
+
 class PhysicsObject{
     constructor(game, x, y, width, height, isStatic){
         this.game = game;
@@ -29,18 +91,18 @@ class PhysicsObject{
             this.frictionChangeX = 1;
             this.yv += (this.gravity * framesElapsed);
             this.move(this.xv * framesElapsed, 0);
-            this.x = Math.round(this.x);
+            //this.x = Math.round(this.x);
             var collX = this.doCollision(this.game.checkCollision(this));
             if (collX[0]){
-                while (this.doCollision(this.game.checkCollision(this, collX[1]))[0]){
-                    this.move(-Math.abs(this.xv)/this.xv, 0);
-                }
                 if (this.xv > 0){ // Positive velocity = moving right
                     this.touchingRight = true;
+                    this.x = getRightmost(collX[1]).x - this.width;
                     this.hitRight();
                 }
                 else if (this.xv < 0){ // Negative velocity =  moving left
                     this.touchingLeft = true;
+                    var leftmost = getLeftmost(collX[1]);
+                    this.x = leftmost.x + leftmost.width;
                     this.hitLeft();
                 }
                 if (this.zeroOnHitX){
@@ -49,17 +111,20 @@ class PhysicsObject{
             }
             this.move(0, this.yv * framesElapsed);
             var collY = this.doCollision(this.game.checkCollision(this));
-            this.y = Math.round(this.y);
+            //this.y = Math.round(this.y);
             if (collY[0]){
-                while (this.doCollision(this.game.checkCollision(this, collY[1]))[0]){
+                /*while (this.doCollision(this.game.checkCollision(this, collY[1]))[0]){
                     this.move(0, -Math.abs(this.yv)/this.yv);
-                }
+                }*/
                 if (this.yv > 0){ // Positive velocity = moving down
                     this.touchingBottom = true;
+                    this.y = getTopmost(collY[1]).y - this.height;
                     this.hitBottom();
                 }
                 else if (this.yv < 0){ // Negative velocity = moving up
                     this.touchingTop = true;
+                    var bottommost = getBottommost(collY[1]);
+                    this.y = bottommost.y + bottommost.height;
                     this.hitTop();
                 }
                 if (this.zeroOnHitY){
@@ -193,16 +258,16 @@ class FlyerEnemy extends Brick{
             this.game.deleteBrick(this);
         }
         if (this.game.player.x > this.x){ // If the player is behind the enemy, move backwards
-            this.xv ++;
+            this.xv += framesElapsed;
         }
         else if (this.game.player.x < this.x){ // Else if only runs if the last if statement didn't run (like else), but also checks for conditions, hence the name.
-            this.xv --;
+            this.xv -= framesElapsed;
         }
         if (this.game.player.y > this.y){ // If the player is further down than the enemy, move down.
-            this.yv ++;
+            this.yv += framesElapsed;
         }
         else if (this.game.player.y < this.y){ // The reverse.
-            this.yv --;
+            this.yv -= framesElapsed;
         }
     }
 }
@@ -431,7 +496,7 @@ game.create(2, 0, 3, 1, "tar", "tar");
 game.create(8, 6, 1, 1,  "lava", "killu", GunnerEnemy);
 
 
-const FPS = 50;
+const FPS = 5;
 const millisPerFrame = 1000 / FPS;
 var lastFrameTime = 0;
 
