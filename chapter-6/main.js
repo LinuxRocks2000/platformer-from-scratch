@@ -269,9 +269,9 @@ class GunnerEnemy extends Brick{
     loop(framesElapsed){
         super.loop(framesElapsed);
         this.phase += framesElapsed;
-        if (this.phase >= 50){
+        if (this.phase >= 75){
             this.phase = 0;
-            this.game._create(this.x, this.y - 50, 10, 10, "lava", "killu", FlyerEnemy, {lifetime: 100});
+            this.game._create(this.x, this.y - 50, 10, 10, "lava", "killu", FlyerEnemy, {lifetime: 75});
         }
     }
 }
@@ -299,6 +299,7 @@ class Player extends PhysicsObject{
         this.specialCollisions.push("tar");
         this._score = 0;
         this.jumpthroughing = false;
+        this.timerate = 1; // This multiplies the number of frames, allowing player to speed
     }
 
     set score(val){
@@ -332,6 +333,7 @@ class Player extends PhysicsObject{
     }
 
     loop(framesElapsed){
+        framesElapsed *= this.timerate;
         super.loop(framesElapsed);
         if (this.keysHeld["ArrowUp"]){
             this.Jump();

@@ -41,7 +41,6 @@ class PhysicsObject{
                 }
                 else if (this.xv < 0){ // Negative velocity =  moving left
                     this.touchingLeft = true;
-                    var leftmost = getLeftmost(collX[1]);
                     this.hitLeft();
                 }
                 if (this.zeroOnHitX){
@@ -61,7 +60,6 @@ class PhysicsObject{
                 }
                 else if (this.yv < 0){ // Negative velocity = moving up
                     this.touchingTop = true;
-                    var bottommost = getBottommost(collY[1]);
                     this.hitTop();
                 }
                 if (this.zeroOnHitY){
