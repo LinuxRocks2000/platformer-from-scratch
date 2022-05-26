@@ -65,3 +65,47 @@ body {
 .tar{
     background-color: black;
 }
+
+#menu {
+    display: grid;
+    grid-template-areas: 'levelname   .'
+                         '.           playbutton';
+    width: 100vw; /* VW = % viewport width */
+    height: 100vh; /* VH = % viewport height */
+    position: absolute; /* Remove it from the document flow so it isn't messed up by the margins on other elements */
+    top: 0px; /* position: absolute; doesn't take effect until we do this */
+    left: 0px; /* Ditto */
+    overflow: hidden; /* On some browsers, an element that perfectly fits the viewport will trip scrollbars; this prevents that. */
+}
+
+#levelname{
+    grid-area: levelname;
+    margin: auto; /* This wasn't added in the tutorial, but you should add it anyways. It will fix later issues. */
+}
+
+#playbutton{
+    grid-area: playbutton;
+    margin: auto;
+}
+
+#playbutton > button{
+    min-width: 100px;
+    min-height: 50px;
+    border-radius: 0px;
+    text-decoration: none;
+    border: none;
+}
+
+.end{
+    background-color: green;
+}
+
+.coverwall{
+    width: 100vw; /* Cover the entire width and height */
+    height: 100vh;
+    position: absolute; /* Remove it from normal document flow and set it to the top-left corner */
+    top: 0px;
+    left: 0px;
+    background-color: white; /* Set the background color to opaque white, the default is transparent */
+    overflow: hidden; /* Elements with width 100vw or height 100vh may trip unnecessary scrollbars, this prevents that. */
+}

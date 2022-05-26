@@ -46,6 +46,25 @@ function getBottommost(physicsObjects){
     return bottommostObj;
 }
 
+function pointRelationToLine(x, y, line){
+    var val = ((line[3] - line[1]) * x) + ((line[0] - line[2]) * y) + ((line[2] * line[1]) - (line[0] * line[3]));
+    return val == 0 ? 0 : val/Math.abs(val); // Find the sign and avoid divide by 0 issues.
+} // This returns -1 if the point (x, y) is above the line, 1 if it's below, and equal to 0 if it's on the line.
+
+function isRectOffLine(rect, line){
+    var p1Val = pointRelationToLine(rect[0], rect[1], line);
+    var p2Val = pointRelationToLine(rect[2], rect[3], line);
+    var p3Val = pointRelationToLine(rect[0], rect[3], line);
+    var p4Val = pointRelationToLine(rect[2], rect[1], line);
+    return p1Val == p2Val && p2Val == p3Val && p3Val == p4Val;
+}
+
+function isLineOffRect(rect, line){
+    return (line[0] < rect[0] && line[2] < rect[0]) ||
+           (line[0] > rect[2] && line[2] > rect[2]) ||
+           (line[1] < rect[1] && line[3] < rect[1]) ||
+           (line[1] > rect[3] && line[3] > rect[3])
+}
 
 class PhysicsObject{
     constructor(game, x, y, width, height, isStatic){
@@ -101,7 +120,7 @@ class PhysicsObject{
             //this.y = Math.round(this.y);
             if (collY[0]){
                 /*while (this.doCollision(this.game.checkCollision(this, collY[1]))[0]){
-                    this.move(0, -Math.abs(this.yv)/this.yv);
+                    this.move(0, -Math.Math.abs(this.yv)/this.yv);
                 }*/
                 if (this.yv > 0){ // Positive velocity = moving down
                     this.touchingBottom = true;
@@ -261,8 +280,8 @@ class FlyerEnemy extends Brick{
 
 
 class GunnerEnemy extends Brick{
-    constructor(x, y, width, height, style, type){
-        super(x, y, width, height, style, type);
+    constructor(game, x, y, width, height, style, type){
+        super(game, x, y, width, height, style, type);
         this.phase = 0;
     }
 
@@ -277,13 +296,62 @@ class GunnerEnemy extends Brick{
 }
 
 
+class BatEnemy extends Brick{
+    constructor(game, x, y, width, height, style, type){
+        super(game, x, y, width, height, style, type);
+        this.state = 0;
+        this.isStatic = true;
+    }
+
+    loop(framesElapsed){
+        super.loop(framesElapsed);
+        var lineToPlayer = [this.game.player.x, this.game.player.y, this.x, this.y];
+        var canSee = true;
+        this.game.tileset.forEach((item, i) => {
+            var rect = [item.x, item.y, item.x + item.width, item.y + item.height];
+            if (!isRectOffLine(rect, lineToPlayer) && !isLineOffRect(rect, lineToPlayer) && item != this){
+                canSee = false;
+            }
+        });
+        if (this.state == 0){
+            if (canSee){
+                this.state = 1;
+                this.isStatic = false;
+            }
+        }
+        if (this.state == 2){
+            if (this.game.player.x > this.x){ // If the player is behind the enemy, move backwards
+                this.xv += framesElapsed;
+            }
+            else if (this.game.player.x < this.x){ // Else if only runs if the last if statement didn't run (like else), but also checks for conditions, hence the name.
+                this.xv -= framesElapsed;
+            }
+            if (this.game.player.y > this.y){ // If the player is further down than the enemy, move down.
+                this.yv += framesElapsed;
+            }
+            else if (this.game.player.y < this.y){ // The reverse.
+                this.yv -= framesElapsed;
+            }
+        }
+    }
+
+    hitBottom(){
+        if (this.state == 1){
+            this.state = 2;
+            this.gravity = 0;
+            this.friction = 0.9;
+            this.frictionY = 0.9;
+        }
+    }
+}
+
+
 class Player extends PhysicsObject{
     constructor(game, x, y, width, height){
         super(game, x, y, width, height);
         this.element = document.createElement("div");
         document.getElementById("game").appendChild(this.element);
         this.element.classList.add("player");
-        this.draw();
         this.keysHeld = {}; // {} means a new dictionary-like object.
         document.addEventListener("keydown", (event) => {
            this.keysHeld[event.key] = true;
@@ -297,6 +365,7 @@ class Player extends PhysicsObject{
         this.specialCollisions.push("jumpthrough");
         this.specialCollisions.push("ice");
         this.specialCollisions.push("tar");
+        this.specialCollisions.push("end");
         this._score = 0;
         this.jumpthroughing = false;
         this.timerate = 1; // This multiplies the number of frames, allowing player to speed
@@ -380,6 +449,9 @@ class Player extends PhysicsObject{
             this.frictionChangeX = 0.5/this.friction;
             return true;
         }
+        if (type == "end"){
+            this.game.win();
+        }
     }
 
     noSpecial(type){
@@ -391,6 +463,14 @@ class Player extends PhysicsObject{
     endGame(){
         this.element.style.display = "none"; // This sets the css property display to none, hiding it and making it inactive.
     }
+
+    reset(){
+        this.x = this.game.startX;
+        this.y = this.game.startY;
+        this.element.style.display = ""; // Leaving it blank means it will go to the default, or what we set in main.css.
+        this.xv = 0;
+        this.yv = 0;
+    }
 }
 
 
@@ -399,7 +479,10 @@ class Game {
         this.blockWidth = blockWidth;
         this.blockHeight = blockHeight;
         this.tileset = [];
-        this.player = new Player(this, 50, 0, this.blockWidth, this.blockHeight * 2); // Players are usually 1x2 blocks. Feel free to change as you wish.
+        this.startX = 50;
+        this.startY = 0;
+        this.player = new Player(this, this.startX, this.startY, this.blockWidth, this.blockHeight * 2); // Players are usually 1x2 blocks. Feel free to change as you wish.
+        this.playing = false;
     }
 
     _create(x, y, width, height, style, type, bricktype = Brick, config = {}){
@@ -413,12 +496,14 @@ class Game {
     }
 
     loop(framesElapsed){
-        this.tileset.forEach((item, i) => {
-            item.loop(framesElapsed);
-            item.draw();
-        });
-        this.player.loop(framesElapsed);
-        this.player.draw();
+        if (this.playing){
+            this.tileset.forEach((item, i) => {
+                item.loop(framesElapsed);
+                item.draw();
+            });
+            this.player.loop(framesElapsed);
+            this.player.draw();
+        }
     }
 
     checkCollision(object, objects = this.tileset){
@@ -432,7 +517,8 @@ class Game {
             "fiftycoin": [0, []],
             "jumpthrough": [0, []],
             "ice": [0, []],
-            "tar": [0, []]
+            "tar": [0, []],
+            "end": [0, []]
         }
         objects.forEach((item, i) => {
             if (object.x + object.width > item.x && // && means "and"
@@ -450,42 +536,126 @@ class Game {
         return collisionsDict;
     }
 
-    die(){
+    clear(){ // Clear the stuff from the level.
         this.tileset.forEach((item, index) => {
             item.remove();
         });
         this.tileset.splice(0, this.tileset.length);
         this.player.endGame();
+        this.playing = false;
+        document.getElementById("menu").style.display = "";
+    }
+
+    doShowThing(element){
+        element.style.display = ""; // Show the element by resetting display (we've seen this before!)
+        setTimeout(() => {
+            element.style.display = "none"; // Hide the element by setting display to none (we've seen this before as well!)
+        }, 2000);
+    }
+
+    die(){
+        this.clear();
+        levels.levelNum --;
+        this.doShowThing(document.getElementById("youlose"));
+    }
+
+    win(){
+        this.clear();
+        this.doShowThing(document.getElementById("youwin"));
     }
 
     deleteBrick(brick){
         brick.remove();
         this.tileset.splice(this.tileset.indexOf(brick), 1);
     }
+
+    reset(){
+        this.playing = true;
+        this.player.reset();
+    }
+}
+
+
+class LevelManager{
+    constructor(game){
+        this.game = game;
+        this.levels = [];
+        this.levelNum = 0;
+        this.curLevel = undefined;
+        this.updateLevelName();
+    }
+
+    addLevel(level){
+        this.levels.push(level);
+    }
+
+    nextLevel(){
+        this.curLevel = this.levels[this.levelNum];
+        this.curLevel.create(this.game);
+        this.levelNum ++;
+        this.updateLevelName();
+    }
+
+    play(){
+        document.getElementById("menu").style.display = "none";
+        this.nextLevel();
+    }
+
+    updateLevelName(){
+        document.getElementById("levelname").innerText = this.levelNum;
+    }
 }
 
 
 // Demo
+
+
+const FirstLevel = {
+    create(game){
+        game.reset();
+        game.create(-5, 8, 20, 1, "normal", "solid");
+
+        game.create(-2, 4, 14, 1, "normal", "solid");
+        game.create(11, 3, 1, 1, "normal", "solid");
+        game.create(2, 3, 1, 1, "coin", "tencoin");
+        game.create(3, 3, 1, 1, "coin", "fiftycoin");
+        game.create(7, 7, 1, 1, "coin", "tencoin");
+        game.create(8, 7, 1, 1, "coin", "tencoin");
+        game.create(9, 7, 1, 1, "coin", "tencoin");
+
+        game.create(5, 0, 1, 1, "normal", "solid");
+        game.create(6, 0, 3, 1, "jumpthrough", "jumpthrough");
+        game.create(9, 0, 1, 1, "normal", "solid");
+        game.create(2, 0, 3, 1, "tar", "tar");
+
+        game.create(8, 6, 1, 1,  "lava", "killu", BatEnemy);
+
+        game.create(8, -1, 1, 1, "end", "end");
+    },
+    run(){ // We aren't using this yet
+
+    },
+    destroy(){ // Or this
+
+    }
+};
+
+
+const SecondLevel = {
+    create(game){
+        game.reset();
+        game.create(-3, 3, 10, 1, "normal", "solid");
+    }
+};
+
 var game = new Game(50, 50);
+const levels = new LevelManager(game);
 
-game.create(-5, 8, 20, 1, "normal", "solid");
-game.create(-2, 4, 14, 1, "normal", "solid");
-game.create(11, 3, 1, 1, "normal", "solid");
-game.create(2, 3, 1, 1, "coin", "tencoin");
-game.create(3, 3, 1, 1, "coin", "fiftycoin");
-game.create(7, 7, 1, 1, "coin", "tencoin");
-game.create(8, 7, 1, 1, "coin", "tencoin");
-game.create(9, 7, 1, 1, "coin", "tencoin");
+levels.addLevel(FirstLevel);
+levels.addLevel(SecondLevel);
+//levels.nextLevel(); // Start it
 
-game.create(5, 0, 1, 1, "normal", "solid");
-game.create(6, 0, 3, 1, "jumpthrough", "jumpthrough");
-game.create(9, 0, 1, 1, "normal", "solid");
-game.create(2, 0, 3, 1, "tar", "tar");
-
-game.create(8, 6, 1, 1,  "lava", "killu", GunnerEnemy);
-
-
-const FPS = 5;
+const FPS = 50;
 const millisPerFrame = 1000 / FPS;
 var lastFrameTime = 0;
 
